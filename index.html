@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSC CGL Pipe & Cistern Calculator (16 Types)</title>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f7f9; }
+    .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; color: #2c3e50; }
+    select, input, button { padding: 10px; margin: 8px 0; font-size: 16px; }
+    .form-group { margin: 15px 0; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .result { margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; display: none; }
+    .step { margin: 10px 0; padding: 10px; background: #fff; border-left: 4px solid #4caf50; }
+    button { background: #3498db; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    button:hover { background: #2980b9; }
+    .copy-btn { background: #27ae60; margin-left: 10px; font-size: 12px; padding: 5px 10px; }
+    .copy-btn:hover { background: #219653; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>SSC CGL Pipe & Cistern Calculator</h1>
+  <p style="text-align:center;color:#7f8c8d;">All 16 Types • Step-by-Step • Instant Result</p>
+
+  <div class="form-group">
+    <label for="type">Select Problem Type:</label>
+    <select id="type" onchange="updateForm()">
+      <option value="">-- Choose Type --</option>
+      <optgroup label="Type 1: Only Inlets">
+        <option value="1a">1A: Two pipes fill together</option>
+        <option value="1b">1B: Three pipes fill together</option>
+      </optgroup>
+      <optgroup label="Type 2: Only Outlets">
+        <option value="2a">2A: Two pipes empty together</option>
+        <option value="2b">2B: Three pipes empty together</option>
+      </optgroup>
+      <optgroup label="Type 3: Mixed (In + Out)">
+        <option value="3a">3A: One fill + One empty</option>
+        <option value="3b">3B: Two fill + One empty</option>
+        <option value="3c">3C: One fill + Two empty</option>
+        <option value="3d">3D: Net zero rate</option>
+      </optgroup>
+      <optgroup label="Type 4: Advanced">
+        <option value="4a">4A: Fill with leak</option>
+        <option value="4b">4B: Leak empties filled tank</option>
+        <option value="4c">4C: Part of tank filled</option>
+        <option value="4d">4D: A fills, B empties alternately</option>
+        <option value="4e">4E: A & B fill, C empties (equations)</option>
+        <option value="4f">4F: Pipe fills two tanks</option>
+        <option value="4g">4G: Efficiency ratio (A is 2x B)</option>
+        <option value="4h">4H: Time to fill if pipes open differently</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div id="dynamic-form"></div>
+
+  <div class="form-group" style="text-align:center;">
+    <button onclick="calculate()">Calculate</button>
+  </div>
+
+  <div id="result" class="result"></div>
+</div>
+
+<script>
+const formHTML = {
+  // Type 1: Only Inlets
+  "1a": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="a1" min="1" step="any" required /></div>
+      <div><label>B fills in (hrs):</label><input type="number" id="b1" min="1" step="any" required /></div>
+    </div>`,
+  "1b": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="a1" min="1" step="any" required /></div>
+      <div><label>B fills in (hrs):</label><input type="number" id="b1" min="1" step="any" required /></div>
+      <div><label>C fills in (hrs):</label><input type="number" id="c1" min="1" step="any" required /></div>
+    </div>`,
+
+  // Type 2: Only Outlets
+  "2a": `
+    <div class="inputs">
+      <div><label>A empties in (hrs):</label><input type="number" id="a2" min="1" step="any" required /></div>
+      <div><label>B empties in (hrs):</label><input type="number" id="b2" min="1" step="any" required /></div>
+    </div>`,
+  "2b": `
+    <div class="inputs">
+      <div><label>A empties in (hrs):</label><input type="number" id="a2" min="1" step="any" required /></div>
+      <div><label>B empties in (hrs):</label><input type="number" id="b2" min="1" step="any" required /></div>
+      <div><label>C empties in (hrs):</label><input type="number" id="c2" min="1" step="any" required /></div>
+    </div>`,
+
+  // Type 3: Mixed
+  "3a": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="fill3" min="1" step="any" required /></div>
+      <div><label>B empties in (hrs):</label><input type="number" id="empty3" min="1" step="any" required /></div>
+    </div>`,
+  "3b": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="a3" min="1" step="any" required /></div>
+      <div><label>B fills in (hrs):</label><input type="number" id="b3" min="1" step="any" required /></div>
+      <div><label>C empties in (hrs):</label><input type="number" id="c3" min="1" step="any" required /></div>
+    </div>`,
+  "3c": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="fill3c" min="1" step="any" required /></div>
+      <div><label>B empties in (hrs):</label><input type="number" id="e1" min="1" step="any" required /></div>
+      <div><label>C empties in (hrs):</label><input type="number" id="e2" min="1" step="any" required /></div>
+    </div>`,
+  "3d": `
+    <div class="inputs">
+      <div><label>Fill rate (fraction/hr):</label><input type="number" id="f3d" step="any" required /></div>
+      <div><label>Empty rate (fraction/hr):</label><input type="number" id="e3d" step="any" required /></div>
+    </div>`,
+
+  // Type 4: Advanced
+  "4a": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="fill4a" min="1" step="any" required /></div>
+      <div><label>Leak empties in (hrs):</label><input type="number" id="leak" min="1" step="any" required /></div>
+    </div>`,
+  "4b": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="a4b" min="1" step="any" required /></div>
+      <div><label>Leak empties full tank in (hrs):</label><input type="number" id="leak4b" min="1" step="any" required /></div>
+    </div>`,
+  "4c": `
+    <div class="inputs">
+      <div><label>A & B together fill in (hrs):</label><input type="number" id="ab" min="1" step="any" required /></div>
+      <div><label>In X hrs, they fill (fraction):</label><input type="number" id="frac" min="0" max="1" step="any" required /></div>
+      <div><label>Find B alone (hrs):</label><input type="text" id="findB" placeholder="Output" readonly /></div>
+    </div>`,
+  "4d": `
+    <div class="inputs">
+      <div><label>A fills in (hrs):</label><input type="number" id="a4d" min="1" step="any" required /></div>
+      <div><label>B empties in (hrs):</label><input type="number" id="b4d" min="1" step="any" required /></div>
+    </div>`,
+  "4e": `
+    <div class="inputs">
+      <div><label>A+B fill in (hrs):</label><input type="number" id="ab4e" min="1" step="any" required /></div>
+      <div><label>B+C empty in (hrs):</label><input type="number" id="bc4e" min="1" step="any" required /></div>
+      <div><label>A+C fill in (hrs):</label><input type="number" id="ac4e" min="1" step="any" required /></div>
+    </div>`,
+  "4f": `
+    <div class="inputs">
+      <div><label>Pipe fills Tank A in (hrs):</label><input type="number" id="ta" min="1" step="any" required /></div>
+      <div><label>Pipe fills Tank B in (hrs):</label><input type="number" id="tb" min="1" step="any" required /></div>
+    </div>`,
+  "4g": `
+    <div class="inputs">
+      <div><label>A is X times B. B fills in (hrs):</label><input type="number" id="ratio" min="1" step="any" required /></div>
+      <div><label>B fills in (hrs):</label><input type="number" id="b4g" min="1" step="any" required /></div>
+    </div>`,
+  "4h": `
+    <div class="inputs">
+      <div><label>A opens for first X hrs, then B. A fills in:</label><input type="number" id="a4h" min="1" step="any" required /></div>
+      <div><label>B fills in:</label><input type="number" id="b4h" min="1" step="any" required /></div>
+      <div><label>X hrs:</label><input type="number" id="xhrs" min="1" step="any" required /></div>
+    </div>`
+};
+
+function updateForm() {
+  const type = document.getElementById("type").value;
+  const container = document.getElementById("dynamic-form");
+  if (type && formHTML[type]) {
+    container.innerHTML = formHTML[type];
+  } else {
+    container.innerHTML = "";
+  }
+  document.getElementById("result").style.display = "none";
+}
+
+function $(id) { return document.getElementById(id).value; }
+function set(id, val) { document.getElementById(id).value = val; }
+
+function calculate() {
+  const type = document.getElementById("type").value;
+  let result = "", steps = [];
+
+  try {
+    if (!type) throw "Please select a type";
+
+    // Helper: LCM
+    function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+    function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+    switch (type) {
+      // TYPE 1: INLETS
+      case "1a":
+        const a1 = +$("a1"), b1 = +$("b1");
+        const rateA = 1/a1, rateB = 1/b1;
+        const net = rateA + rateB;
+        const time = 1/net;
+        steps.push(`Rate A = \\(\\frac{1}{${a1}}\\)`, `Rate B = \\(\\frac{1}{${b1}}\\)`);
+        steps.push(`Net = \\(\\frac{1}{${a1}} + \\frac{1}{${b1}} = \\frac{${b1}+${a1}}{${a1*b1}} = \\frac{${a1+b1}}{${a1*b1}}\\)`)
+        steps.push(`Time = \\(\\frac{1}{\\text{net}} = ${time.toFixed(4)}\\) hrs`);
+        result = `Time to fill: <b>${time.toFixed(4)} hrs</b>`;
+        break;
+
+      case "1b":
+        const a1b = +$("a1"), b1b = +$("b1"), c1 = +$("c1");
+        const rA = 1/a1b, rB = 1/b1b, rC = 1/c1;
+        const net3 = rA + rB + rC;
+        const t3 = 1/net3;
+        steps.push(`Net rate = \\(\\frac{1}{${a1b}} + \\frac{1}{${b1b}} + \\frac{1}{${c1}}\\)`);
+        steps.push(`Time = \\(${t3.toFixed(4)}\\) hrs`);
+        result = `<b>${t3.toFixed(4)} hrs</b>`;
+        break;
+
+      // TYPE 2: OUTLETS
+      case "2a":
+        const a2 = +$("a2"), b2 = +$("b2");
+        const eA = 1/a2, eB = 1/b2;
+        const netE = eA + eB;
+        const tE = 1/netE;
+        steps.push(`Empty rate A = \\(\\frac{1}{${a2}}\\)`, `B = \\(\\frac{1}{${b2}}\\)`);
+        steps.push(`Time to empty = \\(${tE.toFixed(4)}\\) hrs`);
+        result = `<b>${tE.toFixed(4)} hrs</b>`;
+        break;
+
+      case "2b":
+        const a2b = +$("a2"), b2b = +$("b2"), c2 = +$("c2");
+        const net2b = 1/a2b + 1/b2b + 1/c2;
+        const t2b = 1/net2b;
+        result = `<b>${t2b.toFixed(4)} hrs</b>`;
+        break;
+
+      // TYPE 3: MIXED
+      case "3a":
+        const f3 = +$("fill3"), e3 = +$("empty3");
+        const net3a = 1/f3 - 1/e3;
+        if (net3a <= 0) throw "Tank never fills";
+        const t3a = 1/net3a;
+        steps.push(`Net = \\(\\frac{1}{${f3}} - \\frac{1}{${e3}} = \\frac{${e3}-${f3}}{${f3*e3}}\\)`)
+        result = `<b>${t3a.toFixed(4)} hrs</b> to fill`;
+        break;
+
+      case "3b":
+        const a3 = +$("a3"), b3 = +$("b3"), c3 = +$("c3");
+        const net3b = 1/a3 + 1/b3 - 1/c3;
+        const t3b = net3b > 0 ? 1/net3b : "Never fills";
+        result = net3b > 0 ? `<b>${(1/net3b).toFixed(4)} hrs</b>` : `<b>${t3b}</b>`;
+        break;
+
+      case "3c":
+        const f3c = +$("fill3c"), e1 = +$("e1"), e2 = +$("e2");
+        const net3c = 1/f3c - (1/e1 + 1/e2);
+        result = net3c > 0 ? `<b>${(1/net3c).toFixed(4)} hrs</b>` : `<b>Never fills</b>`;
+        break;
+
+      case "3d":
+        const f3d = +$("f3d"), e3d = +$("e3d");
+        result = f3d === e3d ? `<b>Net zero → Never fills/empties</b>` : f3d > e3d ? `<b>Fills in ${(1/(f3d-e3d)).toFixed(4)} hrs</b>` : `<b>Empties in ${(1/(e3d-f3d)).toFixed(4)} hrs</b>`;
+        break;
+
+      // TYPE 4: ADVANCED
+      case "4a":
+        const fill4a = +$("fill4a"), leak = +$("leak");
+        const net4a = 1/fill4a - 1/leak;
+        if (net4a <= 0) throw "Leak too strong";
+        result = `<b>${(1/net4a).toFixed(4)} hrs</b> with leak`;
+        break;
+
+      case "4b":
+        const a4b = +$("a4b"), leak4b = +$("leak4b");
+        const timeWithLeak = 1/(1/a4b - 1/leak4b);
+        result = `<b>${timeWithLeak.toFixed(4)} hrs</b>`;
+        break;
+
+      case "4c":
+        const ab = +$("ab"), frac = +$("frac");
+        const workInAbHrs = frac / (1/ab);
+        set("findB", workInAbHrs.toFixed(4));
+        result = `B alone: <b>${workInAbHrs.toFixed(4)} hrs</b>`;
+        break;
+
+      case "4d":
+        const a4d = +$("a4d"), b4d = +$("b4d");
+        const work2hrs = 1/a4d - 1/b4d;
+        const cycles = 1 / work2hrs;
+        result = `<b>${(cycles * 2).toFixed(4)} hrs</b> (approx)`;
+        break;
+
+      case "4e":
+        const ab4e = +$("ab4e"), bc4e = +$("bc4e"), ac4e = +$("ac4e");
+        const [x, y, z] = [1/ab4e, -1/bc4e, 1/ac4e];
+        // Solve: A+B = x, B+C = -y, A+C = z
+        const A = (x + z + y)/2;
+        const B = (x - y - z)/2;
+        const C = (z - y - x)/2;
+        result = `A: <b>${(1/A).toFixed(2)}</b> hrs, B: <b>${(1/B).toFixed(2)}</b>, C: <b>${(1/Math.abs(C)).toFixed(2)}</b> (empty)`;
+        break;
+
+      case "4f":
+        const ta = +$("ta"), tb = +$("tb");
+        const rate = 1/ta + 1/tb;
+        result = `Time to fill both: <b>${(1/rate).toFixed(4)} hrs</b>`;
+        break;
+
+      case "4g":
+        const ratio = +$("ratio"), b4g = +$("b4g");
+        const aTime = b4g / ratio;
+        result = `A fills in <b>${aTime.toFixed(4)} hrs</b>`;
+        break;
+
+      case "4h":
+        const a4h = +$("a4h"), b4h = +$("b4h"), xhrs = +$("xhrs");
+        const workA = xhrs / a4h;
+        const rem = 1 - workA;
+        const timeB = rem * b4h;
+        result = `Total time: <b>${(xhrs + timeB).toFixed(4)} hrs</b>`;
+        break;
+    }
+
+    // Display
+    let stepHTML = steps.map(s => `<div class="step">\\(${s}\\)</div>`).join("");
+    document.getElementById("result").innerHTML = `
+      <h3>Result:</h3>
+      <p>${result}</p>
+      <button class="copy-btn" onclick="copyResult()">Copy</button>
+      <div><h4>Steps:</h4>${stepHTML}</div>
+    `;
+    document.getElementById("result").style.display = "block";
+    MathJax.typesetPromise();
+
+  } catch (err) {
+    document.getElementById("result").innerHTML = `<p style="color:red;">⚠️ ${err}</p>`;
+    document.getElementById("result").style.display = "block";
+  }
+}
+
+function copyResult() {
+  const text = document.querySelector(".result").innerText;
+  navigator.clipboard.writeText(text);
+  alert("Copied to clipboard!");
+}
+</script>
+
+</body>
+</html>
